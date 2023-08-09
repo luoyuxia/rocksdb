@@ -156,10 +156,13 @@ void Java_org_rocksdb_Options_setComparatorHandle__JI(JNIEnv*, jobject,
       reinterpret_cast<ROCKSDB_NAMESPACE::Options*>(jhandle)->comparator =
           ROCKSDB_NAMESPACE::ReverseBytewiseComparator();
       break;
-    default:
+    case 0:
       reinterpret_cast<ROCKSDB_NAMESPACE::Options*>(jhandle)->comparator =
           ROCKSDB_NAMESPACE::BytewiseComparator();
       break;
+    default:
+     reinterpret_cast<ROCKSDB_NAMESPACE::Options*>(jhandle)->comparator =
+          ROCKSDB_NAMESPACE::BytewiseComparatorWithU64Ts();
   }
 }
 

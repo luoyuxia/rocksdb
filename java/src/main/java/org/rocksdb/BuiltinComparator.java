@@ -13,8 +13,9 @@ package org.rocksdb;
  *   order.</li>
  *   <li>REVERSE_BYTEWISE_COMPARATOR - Sorts all keys in descending bytewise
  *   order</li>
+ *   <li></li>
  * </ol>
  */
 public enum BuiltinComparator {
-  BYTEWISE_COMPARATOR, REVERSE_BYTEWISE_COMPARATOR
+  BYTEWISE_COMPARATOR, REVERSE_BYTEWISE_COMPARATOR, BYTEWISE_COMPARATOR_WITHU64Ts
 }

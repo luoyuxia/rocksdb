@@ -161,4 +161,9 @@ extern const Comparator* BytewiseComparator();
 // ordering.
 extern const Comparator* ReverseBytewiseComparator();
 
+// Return a builtin comparator that uses lexicographic byte-wise
+// ordering and U64Ts. The result remains the property of this module and
+// must not be deleted.
+extern const Comparator* BytewiseComparatorWithU64Ts();
+
 }  // namespace ROCKSDB_NAMESPACE

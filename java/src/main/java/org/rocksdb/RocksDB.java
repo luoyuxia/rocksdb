@@ -856,6 +856,27 @@ public class RocksDB extends RocksObject {
   }
 
   /**
+     * Set the database entry for "key" to "value" with a specified timestamp
+     * in the specified column family.
+     *
+     * @param columnFamilyHandle {@link org.rocksdb.ColumnFamilyHandle}
+     *     instance
+     * @param key the specified key to be inserted.
+     * @param value the value associated with the specified key.
+     * <p>
+     * throws IllegalArgumentException if column family is not present
+     *
+     * @throws RocksDBException thrown if error happens in underlying
+     *    native library.
+     */
+    public void put(final ColumnFamilyHandle columnFamilyHandle,
+        final byte[] key, final byte[] timestamp,
+         final byte[] value) throws RocksDBException {
+      put(nativeHandle_, key, 0, key.length, timestamp, 0, timestamp.length,
+             value, 0, value.length, columnFamilyHandle.nativeHandle_);
+    }
+
+  /**
    * Set the database entry for "key" to "value" in the specified
    * column family.
    *
@@ -1087,6 +1108,13 @@ public class RocksDB extends RocksObject {
       final byte[] key) throws RocksDBException {
     delete(nativeHandle_, key, 0, key.length, columnFamilyHandle.nativeHandle_);
   }
+
+  public void delete(final ColumnFamilyHandle columnFamilyHandle, final byte[] key,
+                     final byte[] timestamp) throws RocksDBException {
+    delete(nativeHandle_, key, 0, key.length, timestamp, 0, timestamp.length,
+            columnFamilyHandle.nativeHandle_);
+  }
+
 
   /**
    * Delete the database entry (if any) for "key".  Returns OK on
@@ -4404,6 +4432,10 @@ public class RocksDB extends RocksObject {
   private native void put(final long handle, final byte[] key, final int keyOffset,
       final int keyLength, final byte[] value, final int valueOffset,
       final int valueLength, final long cfHandle) throws RocksDBException;
+  private native void put(final long handle, final byte[] key, final int keyOffset,
+      final int keyLength, final byte[] timestamp, final int timestampOffset,
+      final int timestampLength, final byte[] value, final int valueOffset,
+      final int valueLength, final long cfHandle) throws RocksDBException;
   private native void put(final long handle, final long writeOptHandle,
       final byte[] key,  final int keyOffset, final int keyLength,
       final byte[] value, final int valueOffset, final int valueLength)
@@ -4417,6 +4449,12 @@ public class RocksDB extends RocksObject {
   private native void delete(final long handle, final byte[] key,
       final int keyOffset, final int keyLength, final long cfHandle)
       throws RocksDBException;
+  private native void delete(final long handle, final byte[] key,
+                             final int keyOffset, final int keyLength,
+                             final byte[] timestamp, final int timestampOffset,
+                             final int timestampLength,
+                             final long cfHandle)
+          throws RocksDBException;
   private native void delete(final long handle, final long writeOptHandle,
       final byte[] key, final int keyOffset, final int keyLength)
       throws RocksDBException;

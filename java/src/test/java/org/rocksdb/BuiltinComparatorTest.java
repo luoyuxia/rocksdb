@@ -10,6 +10,12 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class BuiltinComparatorTest {
@@ -20,6 +26,132 @@ public class BuiltinComparatorTest {
 
   @Rule
   public TemporaryFolder dbFolder = new TemporaryFolder();
+
+
+  @Test
+  public void t1() throws Exception {
+    List<ColumnFamilyHandle> columnFamilyHandles = new ArrayList<>();
+    try (final Options options = new Options()
+            .setCreateIfMissing(true)
+            .setComparator(BuiltinComparator.BYTEWISE_COMPARATOR_WITHU64Ts);
+//         final ColumnFamilyOptions cfOptions = new ColumnFamilyOptions()
+//              .setComparator(BuiltinComparator.BYTEWISE_COMPARATOR_WITHU64Ts);
+//         DBOptions dbOptions = new DBOptions().setCreateIfMissing(true)
+         final RocksDB rocksDb = RocksDB.open(options,
+                 dbFolder.getRoot().getAbsolutePath())
+    ) {
+//      List<ColumnFamilyDescriptor> columnFamilyDescriptors =
+//      Arrays.asList(new ColumnFamilyDescriptor("name".getBytes(UTF_8), cfOptions),
+//              new ColumnFamilyDescriptor("default".getBytes(UTF_8), cfOptions));
+//      RocksDB rocksDb = RocksDB.open(dbOptions, dbFolder.getRoot().getAbsolutePath(),
+//              Collections.singletonList(new ColumnFamilyDescriptor("name".getBytes(UTF_8), cfOptions)), columnFamilyHandles);
+      ReadOptions readOptions  = new ReadOptions();
+      readOptions.setTimestamp(new Slice("s"));
+      assertThat(rocksDb.get(rocksDb.getDefaultColumnFamily(),
+              readOptions, "abc1".getBytes())).isEqualTo("abc1".getBytes());
+    }
+  }
+
+  @Test
+  public void t4() throws Exception {
+    final Options options = new Options()
+            .setCreateIfMissing(true)
+            .setCreateMissingColumnFamilies(true)
+            .setComparator(BuiltinComparator.BYTEWISE_COMPARATOR_WITHU64Ts);
+    final RocksDB rocksDb = RocksDB.open(options,
+            dbFolder.getRoot().getAbsolutePath());
+    ColumnFamilyOptions cfOptions = new ColumnFamilyOptions(options);
+    ColumnFamilyHandle columnFamilyHandle =
+    rocksDb.createColumnFamily(new ColumnFamilyDescriptor("t".getBytes(), cfOptions));
+    ReadOptions readOptions  = new ReadOptions();
+    readOptions.setTimestamp(new Slice("seeeeeee"));
+
+    System.out.println(rocksDb.get(columnFamilyHandle, readOptions, "abc1".getBytes()));
+
+    rocksDb.put(columnFamilyHandle,
+            "abc1".getBytes(), "seeeeeee".getBytes(),  "abc1".getBytes());
+
+    System.out.println(rocksDb.get(columnFamilyHandle, readOptions, "abc1".getBytes()));
+
+    readOptions.setTimestamp(new Slice("aeeeeeee"));
+    System.out.println(rocksDb.get(columnFamilyHandle, readOptions, "abc1".getBytes()));
+  }
+
+  @Test
+  public void t4r() throws Exception {
+    List<ColumnFamilyHandle> columnFamilyHandles = new ArrayList<>();
+    final Options options = new Options()
+            .setCreateIfMissing(true)
+            .setCreateMissingColumnFamilies(true);
+    DBOptions dbOptions = new DBOptions(options);
+    ColumnFamilyOptions cfOptions = new ColumnFamilyOptions(options);
+    List<ColumnFamilyDescriptor> cfs = new ArrayList<>();
+    cfs.add(new ColumnFamilyDescriptor("default".getBytes(), cfOptions));
+    cfs.add(new ColumnFamilyDescriptor("t".getBytes(), cfOptions));
+
+    final RocksDB rocksDb = RocksDB.open(dbOptions,
+            dbFolder.getRoot().getAbsolutePath(), cfs, columnFamilyHandles);
+
+    ReadOptions readOptions = new ReadOptions();
+    rocksDb.put(columnFamilyHandles.get(1), "av".getBytes(UTF_8), "vs".getBytes());
+    System.out.println(Arrays.toString(rocksDb.get(columnFamilyHandles.get(1),
+            readOptions, "av".getBytes())));
+
+    rocksDb.delete(columnFamilyHandles.get(1), "av".getBytes(UTF_8));
+    System.out.println(Arrays.toString(rocksDb.get(columnFamilyHandles.get(1),
+            readOptions, "av".getBytes())));
+  }
+
+  @Test
+  public void t2() throws Exception {
+    List<ColumnFamilyHandle> columnFamilyHandles = new ArrayList<>();
+    final Options options = new Options()
+            .setCreateIfMissing(true)
+            .setCreateMissingColumnFamilies(true)
+            .setComparator(BuiltinComparator.BYTEWISE_COMPARATOR_WITHU64Ts);
+    DBOptions dbOptions = new DBOptions(options);
+    ColumnFamilyOptions cfOptions = new ColumnFamilyOptions(options);
+    List<ColumnFamilyDescriptor> cfs = new ArrayList<>();
+    cfs.add(new ColumnFamilyDescriptor("default".getBytes(), cfOptions));
+    cfs.add(new ColumnFamilyDescriptor("t".getBytes(), cfOptions));
+
+    final RocksDB rocksDb = RocksDB.open(dbOptions,
+            dbFolder.getRoot().getAbsolutePath(), cfs, columnFamilyHandles);
+    ReadOptions readOptions  = new ReadOptions();
+    readOptions.setTimestamp(new Slice("aeeeeeee"));
+    System.out.println(Arrays.toString(rocksDb.get(columnFamilyHandles.get(1),
+            readOptions, "abc1".getBytes())));
+
+    rocksDb.put(columnFamilyHandles.get(1),
+            "abc1".getBytes(), "beeeeeee".getBytes(),  "abc1".getBytes());
+
+    System.out.println(Arrays.toString(rocksDb.get(columnFamilyHandles.get(1),
+            readOptions, "abc1".getBytes())));
+
+    readOptions.setTimestamp(new Slice("beeeeeee"));
+    System.out.println(Arrays.toString(rocksDb.get(columnFamilyHandles.get(1),
+            readOptions, "abc1".getBytes())));
+
+    rocksDb.delete(columnFamilyHandles.get(1), "abc1".getBytes(), "ceeeeeee".getBytes());
+    System.out.println(Arrays.toString(rocksDb.get(columnFamilyHandles.get(1),
+            readOptions, "abc1".getBytes())));
+
+    readOptions.setTimestamp(new Slice("feeeeeee"));
+    System.out.println(Arrays.toString(rocksDb.get(columnFamilyHandles.get(1),
+            readOptions, "abc1".getBytes())));
+
+    readOptions.setTimestamp(new Slice("aeeeeeee"));
+    System.out.println(Arrays.toString(rocksDb.get(columnFamilyHandles.get(1),
+            readOptions, "abc1".getBytes())));
+
+    rocksDb.multiGetAsList(readOptions,null,null);
+  }
+
+  @Test
+  public void tr() throws Exception {
+    System.out.println(Arrays.toString("aeeeeeee".getBytes()));
+    System.out.println(Arrays.toString("ceeeeeee".getBytes()));
+  }
 
   @Test
   public void builtinForwardComparator()
