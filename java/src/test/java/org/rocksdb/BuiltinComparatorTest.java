@@ -9,7 +9,9 @@ import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import org.rocksdb.util.TestUtil;
 
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -151,6 +153,174 @@ public class BuiltinComparatorTest {
   public void tr() throws Exception {
     System.out.println(Arrays.toString("aeeeeeee".getBytes()));
     System.out.println(Arrays.toString("ceeeeeee".getBytes()));
+  }
+
+  @Test
+  public void onceGet() throws Exception {
+    int n = 100000;
+    final Options options = new Options()
+            .setCreateIfMissing(true)
+            .setCreateMissingColumnFamilies(true)
+            .setComparator(BuiltinComparator.BYTEWISE_COMPARATOR_WITHU64Ts);
+    ColumnFamilyOptions cfOptions = new ColumnFamilyOptions(options);
+    DBOptions dbOptions = new DBOptions(options);
+
+    List<ColumnFamilyDescriptor> cfs = new ArrayList<>();
+    cfs.add(new ColumnFamilyDescriptor("default".getBytes(), cfOptions));
+    cfs.add(new ColumnFamilyDescriptor("t".getBytes(), cfOptions));
+    List<ColumnFamilyHandle> columnFamilyHandles = new ArrayList<>();
+
+    final RocksDB rocksDb = RocksDB.open(dbOptions,
+            dbFolder.getRoot().getAbsolutePath(), cfs, columnFamilyHandles);
+
+    byte[] timestamps = "seeeeeee".getBytes();
+    for (int i = 0; i < n; i++) {
+      rocksDb.put(rocksDb.getDefaultColumnFamily(),
+              String.format("key%d", i).getBytes(),timestamps, String.format("val%d", i).getBytes());
+    }
+
+    ReadOptions readOptions  = new ReadOptions();
+    readOptions.setTimestamp(new Slice("seeeeeee"));
+
+    long startTs = System.nanoTime();
+    for (int i = 0; i < n; i++) {
+      rocksDb.get(readOptions, String.format("key%d", i).getBytes());
+    }
+    long endTs = System.nanoTime();
+    System.out.println(endTs - startTs);
+  }
+
+  @Test
+  public void mulgetCompare() throws Exception {
+    int n = 100000;
+    final Options options = new Options()
+            .setCreateIfMissing(true)
+            .setCreateMissingColumnFamilies(true)
+            .setComparator(BuiltinComparator.BYTEWISE_COMPARATOR_WITHU64Ts)
+            .setWriteBufferSize(1);
+    Statistics statistics = new Statistics();
+    options.setStatistics(statistics);
+    DBOptions dbOptions = new DBOptions(options);
+    ColumnFamilyOptions cfOptions = new ColumnFamilyOptions(options);
+
+    List<ColumnFamilyDescriptor> cfs = new ArrayList<>();
+    cfs.add(new ColumnFamilyDescriptor("default".getBytes(), cfOptions));
+    cfs.add(new ColumnFamilyDescriptor("t".getBytes(), cfOptions));
+    List<ColumnFamilyHandle> columnFamilyHandles = new ArrayList<>();
+
+    final RocksDB rocksDb = RocksDB.open(dbOptions,
+            dbFolder.getRoot().getAbsolutePath(), cfs, columnFamilyHandles);
+
+    byte[] timestamps = "seeeeeee".getBytes();
+    for (int i = 0; i < n; i++) {
+      rocksDb.put(rocksDb.getDefaultColumnFamily(),
+              String.format("key%d", i).getBytes(),timestamps,
+              String.format("val%d", i).getBytes());
+    }
+    ReadOptions readOptions  = new ReadOptions();
+    readOptions.setTimestamp(new Slice("seeeeeee"));
+
+    List<ByteBuffer> keys = new ArrayList<>();
+    List<ByteBuffer> values = new ArrayList<>();
+    for (int i = 0; i < 512; i++) {
+      byte[] keyBytes = String.format("key%d", i).getBytes();
+      ByteBuffer key = ByteBuffer.allocateDirect(keyBytes.length).put(keyBytes);
+      key.flip();
+      keys.add(key);
+      values.add(ByteBuffer.allocateDirect(24));
+    }
+
+    long start = System.nanoTime();
+    rocksDb.multiGetByteBuffers(readOptions, keys, values);
+    long end = System.nanoTime();
+    System.out.println(end - start);
+    System.out.println(rocksDb.getProperty("rocksdb.stats"));
+  }
+
+  @Test
+  public void mulgetCompare1() throws Exception {
+    int n = 100000;
+    final Options options = new Options()
+            .setCreateIfMissing(true)
+            .setCreateMissingColumnFamilies(true)
+            .setComparator(BuiltinComparator.BYTEWISE_COMPARATOR_WITHU64Ts)
+            .setWriteBufferSize(1);
+    Statistics statistics = new Statistics();
+    options.setStatistics(statistics);
+    DBOptions dbOptions = new DBOptions(options);
+    ColumnFamilyOptions cfOptions = new ColumnFamilyOptions(options);
+
+    List<ColumnFamilyDescriptor> cfs = new ArrayList<>();
+    cfs.add(new ColumnFamilyDescriptor("default".getBytes(), cfOptions));
+    cfs.add(new ColumnFamilyDescriptor("t".getBytes(), cfOptions));
+    List<ColumnFamilyHandle> columnFamilyHandles = new ArrayList<>();
+
+    final RocksDB rocksDb = RocksDB.open(dbOptions,
+            dbFolder.getRoot().getAbsolutePath(), cfs, columnFamilyHandles);
+
+    byte[] timestamps = "seeeeeee".getBytes();
+    for (int i = 0; i < n; i++) {
+      rocksDb.put(rocksDb.getDefaultColumnFamily(),
+              String.format("key%d", i).getBytes(),timestamps,
+              String.format("val%d", i).getBytes());
+    }
+    ReadOptions readOptions  = new ReadOptions();
+    readOptions.setTimestamp(new Slice("seeeeeee"));
+
+    long start = System.nanoTime();
+    for (int i = 0; i < 512; i++) {
+      rocksDb.get(readOptions, String.format("key%d", i).getBytes());
+    }
+    long end = System.nanoTime();
+    System.out.println(end - start);
+    System.out.println(rocksDb.getProperty("rocksdb.stats"));
+  }
+
+  @Test
+  public void mulget() throws Exception {
+    int n = 100000;
+    final Options options = new Options()
+            .setCreateIfMissing(true)
+            .setCreateMissingColumnFamilies(true)
+            .setComparator(BuiltinComparator.BYTEWISE_COMPARATOR_WITHU64Ts);
+    ColumnFamilyOptions cfOptions = new ColumnFamilyOptions(options);
+
+    final RocksDB rocksDb = RocksDB.open(options, dbFolder.getRoot().getAbsolutePath());
+    ColumnFamilyHandle columnFamilyHandle =
+            rocksDb.createColumnFamily(new ColumnFamilyDescriptor("t".getBytes(), cfOptions));
+
+    byte[] timestamps = "seeeeeee".getBytes();
+    for (int i = 0; i < n; i++) {
+      rocksDb.put(columnFamilyHandle, String.format("key%d", i).getBytes(),timestamps,
+              String.format("val%d", i).getBytes());
+    }
+    ReadOptions readOptions  = new ReadOptions();
+    readOptions.setTimestamp(new Slice("seeeeeee"));
+
+    List<ByteBuffer> keys = new ArrayList<>();
+    List<ByteBuffer> values = new ArrayList<>();
+    for (int i = 0; i < n; i++) {
+      byte[] keyBytes = String.format("key%d", i).getBytes();
+      ByteBuffer key = ByteBuffer.allocateDirect(keyBytes.length).put(keyBytes);
+      key.flip();
+      keys.add(key);
+      values.add(ByteBuffer.allocateDirect(24));
+    }
+
+    long startTs = System.nanoTime();
+
+    rocksDb.multiGetByteBuffers(readOptions,
+            Collections.singletonList(columnFamilyHandle), keys, values);
+    long endTs = System.nanoTime();
+    System.out.println(endTs - startTs);
+  }
+
+  @Test
+  public void g() {
+    ByteBuffer expected =
+            ByteBuffer.allocateDirect(24).put(Arrays.copyOf("valueX".getBytes(), 4));
+    expected.flip();
+    System.out.println(Arrays.toString(TestUtil.bufferBytes(expected)));
   }
 
   @Test

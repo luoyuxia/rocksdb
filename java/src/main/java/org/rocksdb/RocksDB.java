@@ -2426,8 +2426,11 @@ public class RocksDB extends RocksObject {
     final int[] valuesSizeArray = new int[numValues];
     final Status[] statusArray = new Status[numValues];
 
+    long startTs = System.nanoTime();
     multiGet(nativeHandle_, readOptions.nativeHandle_, cfHandles, keysArray, keyOffsets, keyLengths,
         valuesArray, valuesSizeArray, statusArray);
+    long endTs = System.nanoTime();
+    System.out.printf("cost: %d%n", endTs - startTs);
 
     final List<ByteBufferGetStatus> results = new ArrayList<>();
     for (int i = 0; i < numValues; i++) {
@@ -4444,6 +4447,13 @@ public class RocksDB extends RocksObject {
       final byte[] key, final int keyOffset, final int keyLength,
       final byte[] value, final int valueOffset, final int valueLength,
       final long cfHandle) throws RocksDBException;
+
+  private native void put(final long handle, final long writeOptHandle,
+      final byte[] key, final int keyOffset, final int keyLength,
+      final byte[] timestamp, final int timestampOffset, final int timestampLength,
+      final byte[] value, final int valueOffset, final int valueLength,
+      final long cfHandle) throws RocksDBException;
+
   private native void delete(final long handle, final byte[] key,
       final int keyOffset, final int keyLength) throws RocksDBException;
   private native void delete(final long handle, final byte[] key,

@@ -109,9 +109,12 @@ public class StatisticsTest {
 
   @Test
   public void getHistogramString() throws RocksDBException {
-    try (final Statistics statistics = new Statistics();
+    final Statistics statistics = new Statistics();
+//    statistics.setStatsLevel(StatsLevel.ALL);
+    try (
          final Options opt = new Options()
              .setStatistics(statistics)
+                 .setWriteBufferSize(1)
              .setCreateIfMissing(true);
          final RocksDB db = RocksDB.open(opt,
              dbFolder.getRoot().getAbsolutePath())) {
@@ -119,12 +122,26 @@ public class StatisticsTest {
       final byte[] key = "some-key".getBytes(StandardCharsets.UTF_8);
       final byte[] value = "some-value".getBytes(StandardCharsets.UTF_8);
 
-      for(int i = 0; i < 10; i++) {
+      for(int i = 0; i < 10000; i++) {
         db.put(key, value);
       }
+//      db.flush(new FlushOptions().setWaitForFlush(true));
+      for (int i = 0; i < 1000; i++) {
+        db.get(key);
+      }
+      System.out.println(db.getProperty("rocksdb.stats"));
+
+
+      System.out.println(statistics.getHistogramString(HistogramType.BYTES_PER_READ));
 
       assertThat(statistics.getHistogramString(HistogramType.BYTES_PER_WRITE)).isNotNull();
     }
+  }
+
+  @Test
+  public void t1() {
+    System.out.println(Long.MAX_VALUE);
+    System.out.println(System.currentTimeMillis() * 1_000_000);
   }
 
   @Test
