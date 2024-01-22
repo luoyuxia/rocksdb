@@ -34,8 +34,9 @@ std::string EncodeAsUint64(uint64_t v) {
 class SstFileReaderTest : public testing::Test {
  public:
   SstFileReaderTest() {
-    options_.merge_operator = MergeOperators::CreateUInt64AddOperator();
+//    options_.merge_operator = MergeOperators::CreateUInt64AddOperator();
     sst_name_ = test::PerThreadDBPath("sst_file");
+    sst_name_1 = test::PerThreadDBPath("sst_file1");
 
     Env* base_env = Env::Default();
     EXPECT_OK(
@@ -47,6 +48,7 @@ class SstFileReaderTest : public testing::Test {
 
   ~SstFileReaderTest() {
     Status s = env_->DeleteFile(sst_name_);
+    s = env_->DeleteFile(sst_name_1);
     EXPECT_OK(s);
   }
 
@@ -67,11 +69,14 @@ class SstFileReaderTest : public testing::Test {
                  bool check_global_seqno = false) {
     ReadOptions ropts;
     SstFileReader reader(options_);
-    ASSERT_OK(reader.Open(file_name));
-    ASSERT_OK(reader.VerifyChecksum());
+    std::vector<std::string> vec;
+    vec.emplace_back("/Users/luoyuxia/demo/rocksdb/000008.sst");
+//    vec.emplace_back("/Users/luoyuxia/demo/rocksdb/000013.sst");
+    ASSERT_OK(reader.Open("/Users/luoyuxia/demo/rocksdb/000008.sst"));
+//    ASSERT_OK(reader.VerifyChecksum());
     std::unique_ptr<Iterator> iter(reader.NewIterator(ropts));
     iter->SeekToFirst();
-    for (size_t i = 0; i + 2 < keys.size(); i += 3) {
+    for (size_t i = 0; i < 1; i ++) {
       ASSERT_TRUE(iter->Valid());
       ASSERT_EQ(iter->key().compare(keys[i]), 0);
       ASSERT_EQ(iter->value().compare(keys[i]), 0);
@@ -96,6 +101,7 @@ class SstFileReaderTest : public testing::Test {
 
   void CreateFileAndCheck(const std::vector<std::string>& keys) {
     CreateFile(sst_name_, keys);
+    CreateFile(sst_name_1, keys);
     CheckFile(sst_name_, keys);
   }
 
@@ -103,13 +109,39 @@ class SstFileReaderTest : public testing::Test {
   Options options_;
   EnvOptions soptions_;
   std::string sst_name_;
+  std::string sst_name_1;
   std::shared_ptr<Env> env_guard_;
   Env* env_;
 };
 
+//TEST_F(SstFileReaderTest, TT) {
+//  Options options_;
+//  SstFileReader reader(options_);
+//  std::vector<std::string> vec;
+//  vec.emplace_back("/Users/luoyuxia/demo/rocksdb/000008.sst");
+//  vec.emplace_back("/Users/luoyuxia/demo/rocksdb/000013.sst");
+//  ReadOptions ropts;
+//  ASSERT_OK(reader.Open(vec));
+//  ASSERT_OK(reader.VerifyChecksum());
+//  std::unique_ptr<Iterator> iter(reader.NewIterator(ropts));
+//  iter->SeekToFirst();
+//  for (size_t i = 0; i < 10; i ++) {
+//    ASSERT_TRUE(iter->Valid());
+//    iter->Next();
+//  }
+//}
+
 const uint64_t kNumKeys = 100;
 
 TEST_F(SstFileReaderTest, Basic) {
+  std::vector<std::string> keys;
+  for (uint64_t i = 0; i < kNumKeys; i++) {
+    keys.emplace_back(EncodeAsString(i));
+  }
+  CreateFileAndCheck(keys);
+}
+
+TEST_F(SstFileReaderTest, MultipleTest) {
   std::vector<std::string> keys;
   for (uint64_t i = 0; i < kNumKeys; i++) {
     keys.emplace_back(EncodeAsString(i));

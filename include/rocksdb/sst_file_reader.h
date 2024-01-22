@@ -24,6 +24,8 @@ class SstFileReader {
   // Prepares to read from the file located at "file_path".
   Status Open(const std::string& file_path);
 
+  Status Open(const std::vector<std::string>& file_paths);
+
   // Returns a new iterator over the table contents.
   // Most read options provide the same control as we read from DB.
   // If "snapshot" is nullptr, the iterator returns only the latest keys.
